@@ -13,4 +13,8 @@ static const String baseUrl = 'https://tadreeby-backend-production.up.railway.ap
   static const String forgotPassword = '$baseUrl/auth/forgot-password';
   static const String verifyResetCode = '$baseUrl/auth/verify-reset-code';
   static const String resetPassword = '$baseUrl/auth/reset-password';
+    static const String universities = '$baseUrl/universities';
+
+
+
 }
