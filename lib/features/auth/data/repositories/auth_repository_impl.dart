@@ -2,6 +2,12 @@ import '../../domain/repositories/auth_repository.dart';
 import '../data_sources/auth_remote_data_source.dart';
 import '../models/login_response_model.dart';
 import '../models/register_request_model.dart';
+import '../models/forgot_password_request_model.dart';
+import '../models/verify_reset_code_request_model.dart';
+import '../models/reset_password_request_model.dart';
+import '../models/forgot_password_response_model.dart';
+import '../models/verify_reset_code_response_model.dart';
+import '../models/reset_password_response_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
@@ -22,19 +28,18 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout(String refreshToken) {
     return remoteDataSource.logout(refreshToken);
   }
-
-  @override
-  Future<String> forgotPassword(String email) {
-    return remoteDataSource.forgotPassword(email);
+ @override
+  Future<ForgotPasswordResponseModel> forgotPassword(ForgotPasswordRequestModel request) {
+    return remoteDataSource.forgotPassword(request);
   }
 
   @override
-  Future<String> verifyResetCode(String email, String code) {
-    return remoteDataSource.verifyResetCode(email, code);
+  Future<VerifyResetCodeResponseModel> verifyResetCode(VerifyResetCodeRequestModel request) {
+    return remoteDataSource.verifyResetCode(request);
   }
 
   @override
-  Future<bool> resetPassword(String resetToken, String newPassword) {
-    return remoteDataSource.resetPassword(resetToken, newPassword);
+  Future<ResetPasswordResponseModel> resetPassword(ResetPasswordRequestModel request) {
+    return remoteDataSource.resetPassword(request);
   }
 }
