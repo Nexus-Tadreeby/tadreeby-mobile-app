@@ -20,54 +20,53 @@ class AuthInterceptor extends Interceptor {
     return handler.next(options);
   }
 
+
+
   @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
-    if (err.response?.statusCode == 401) {
-      final refreshToken = await _storageService.getRefreshToken();
+Future<void> onError(
+  DioException err,
+  ErrorInterceptorHandler handler,
+) async {
+  if (err.response?.statusCode == 401) {
+    final refreshToken = await _storageService.getRefreshToken();
 
-      if (refreshToken != null) {
-        try {
-      
-final response = await _dio.post(
-  ApiConstants.refresh,
-  data: {'refreshToken': refreshToken}, 
-);
+    if (refreshToken != null) {
+      try {
+        final response = await _dio.post(
+          ApiConstants.refresh,
+          data: {'refreshToken': refreshToken},
+        );
 
-          if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final newAccessToken = response.data['accessToken'];
+          final newRefreshToken = response.data['refreshToken'];
 
-
-final newAccessToken = response.data['accessToken'];
-final newRefreshToken = response.data['refreshToken'];
-
-            await _storageService.saveAccessToken(newAccessToken);
-            if (newRefreshToken != null) {
-              await _storageService.saveRefreshToken(newRefreshToken);
-            }
-
-            final requestOptions = err.requestOptions;
-            requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-
-            final cloneReq = await _dio.request(
-              requestOptions.path,
-              options: Options(
-                method: requestOptions.method,
-                headers: requestOptions.headers,
-              ),
-              data: requestOptions.data,
-              queryParameters: requestOptions.queryParameters,
-            );
-
-            return handler.resolve(cloneReq);
+          await _storageService.saveAccessToken(newAccessToken);
+          if (newRefreshToken != null) {
+            await _storageService.saveRefreshToken(newRefreshToken);
           }
-        } catch (e) {
-          await _storageService.clearAuthData();
+
+          final requestOptions = err.requestOptions;
+          requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+
+          final cloneReq = await _dio.request(
+            requestOptions.path,
+            options: Options(
+              method: requestOptions.method,
+              headers: requestOptions.headers,
+            ),
+            data: requestOptions.data,
+            queryParameters: requestOptions.queryParameters,
+          );
+
+          return handler.resolve(cloneReq);
         }
+      } catch (e) {
+        await _storageService.clearAuthData();
       }
     }
-
-    return handler.next(err);
   }
+
+  return handler.next(err);
+}
 }
