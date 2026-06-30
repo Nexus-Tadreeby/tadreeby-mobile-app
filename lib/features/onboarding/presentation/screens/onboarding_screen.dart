@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tadreeby/core/utils/secure_storage_service.dart';
 
 import '../../../../core/theme/app_colors.dart';
 
@@ -242,8 +243,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _finishOnboarding() {
-    if (mounted) context.go('/login');
+   void _finishOnboarding() async {
+    try {
+      final storage = SecureStorageService();
+      await storage.setHasSeenOnboarding();
+      print(' Onboarding marked as seen');
+    } catch (e) {
+      print(' Error saving onboarding status: $e');
+    }
+    
+    if (mounted) {
+      context.go('/login');
+    }
   }
 
   void _skip() {
