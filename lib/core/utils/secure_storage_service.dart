@@ -1,4 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class SecureStorageService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -27,14 +29,35 @@ class SecureStorageService {
     await _storage.delete(key: _refreshTokenKey);
   }
 
-static const String _keyHasSeenOnboarding = 'has_seen_onboarding';
+// static const String _keyHasSeenOnboarding = 'has_seen_onboarding';
 
-Future<void> setHasSeenOnboarding() async {
-  await _storage.write(key: _keyHasSeenOnboarding, value: 'true');
-}
+  Future<bool> hasSeenOnboarding() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('has_seen_onboarding') ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
 
-Future<bool> hasSeenOnboarding() async {
-  final value = await _storage.read(key: _keyHasSeenOnboarding);
-  return value == 'true';
-}
+  Future<void> setHasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_onboarding', true);
+  }
+
+  Future<void> resetOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('has_seen_onboarding');
+  }
+
+
+    Future<void> printAllData() async {
+    final all = await _storage.readAll();
+    print(' All Secure Storage Data: $all');
+  }
+
+  Future<void> resetAllData() async {
+    await _storage.deleteAll();
+    print(' All secure storage data deleted!');
+  }
 }
