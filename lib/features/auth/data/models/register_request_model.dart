@@ -4,14 +4,14 @@ class RegisterRequestModel {
   final String firstName;
   final String lastName;
   final int personalID;
-  final int studentNumber;
+  final num studentNumber;
   final String phone;
   final String email;
   final String password;
   final String confirmPassword;
   final int universityId;
   final String major;
-  final String verificationDocumentPath; 
+  final String verificationDocumentPath;
 
   RegisterRequestModel({
     required this.firstName,
@@ -21,7 +21,7 @@ class RegisterRequestModel {
     required this.phone,
     required this.email,
     required this.password,
-    required this.confirmPassword, 
+    required this.confirmPassword,
     required this.universityId,
     required this.major,
     required this.verificationDocumentPath,
@@ -41,7 +41,7 @@ class RegisterRequestModel {
       'major': major,
       'verificationDocument': await MultipartFile.fromFile(
         verificationDocumentPath,
-        filename: verificationDocumentPath.split('/').last, 
+        filename: verificationDocumentPath.split('/').last,
       ),
     });
   }
@@ -63,5 +63,4 @@ class RegisterRequestModel {
     print('verificationDocumentPath: $verificationDocumentPath');
     print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   }
-
 }

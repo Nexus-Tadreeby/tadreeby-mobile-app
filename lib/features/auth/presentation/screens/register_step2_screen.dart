@@ -72,30 +72,31 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
   }
 
   String? _validateStudentNumber(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your student number';
-    }
-
-    if (value.length < 7 || value.length > 10) {
-      return 'Student number must be between 7 and 10 digits';
-    }
-
-    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-      return 'Student number must contain only numbers';
-    }
-
-    if (_selectedUniversity == null || _selectedUniversity!.isEmpty) {
-      return 'Please select a university first';
-    }
-
-    final existingNumbers = _existingStudentNumbers[_selectedUniversity] ?? [];
-    if (existingNumbers.contains(value)) {
-      return 'This student number already exists in $_selectedUniversity';
-    }
-
-    return null;
+  if (value == null || value.isEmpty) {
+    return 'Please enter your student number';
   }
 
+  final trimmedValue = value.trim();
+  
+  if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+    return 'Student number must contain only numbers';
+  }
+
+  if (trimmedValue.length < 7 || trimmedValue.length > 15) {
+    return 'Student number must be between 7 and 15 digits';
+  }
+
+  if (_selectedUniversity == null || _selectedUniversity!.isEmpty) {
+    return 'Please select a university first';
+  }
+
+  final existingNumbers = _existingStudentNumbers[_selectedUniversity] ?? [];
+  if (existingNumbers.contains(trimmedValue)) {
+    return 'This student number already exists in $_selectedUniversity';
+  }
+
+  return null;
+}
   int _getUniversityId(String universityName) {
     final map = {
       'Islamic University of Gaza': 1,
@@ -108,35 +109,54 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
   }
 
 
-    @override
-  void initState() {
-    super.initState();
+   @override
+void initState() {
+  super.initState();
+  
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final cubit = context.read<RegisterDataCubit>();
+    final data = cubit.allData;
     
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cubit = context.read<RegisterDataCubit>();
-      final data = cubit.allData;
-      
-      if (data.isNotEmpty) {
-        _studentNumberController.text = data['studentNumber'] ?? '';
-        _selectedUniversity = data['universityName'];
-        _selectedMajor = data['major'];
-        setState(() {});
+    if (data.isNotEmpty) {
+        final studentNumber = data['studentNumber'];
+      if (studentNumber != null) {
+        _studentNumberController.text = studentNumber.toString();
       }
-    });
-  }
-
-  void _goToStep3() {
-    if (_formKey.currentState!.validate()) {
-      context.read<RegisterDataCubit>().saveStep2Data(
-        studentNumber: _studentNumberController.text.trim(),
-        universityId: _getUniversityId(_selectedUniversity ?? ''),
-        universityName: _selectedUniversity ?? '',
-        major: _selectedMajor ?? '',
-      );
-      
-      context.push('/register/step3');
+      _selectedUniversity = data['universityName'];
+      _selectedMajor = data['major'];
+      setState(() {});
     }
+  });
+}
+
+void _goToStep3() {
+  if (_formKey.currentState!.validate()) {
+    final studentNumberValue = _studentNumberController.text.trim();
+    
+        num studentNumber;
+    try {
+      studentNumber = num.parse(studentNumberValue);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid student number format. Please enter a valid number.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    
+    context.read<RegisterDataCubit>().saveStep2Data(
+      studentNumber: studentNumber,  
+      universityId: _getUniversityId(_selectedUniversity ?? ''),
+      universityName: _selectedUniversity ?? '',
+      major: _selectedMajor ?? '',
+    );
+    
+    context.push('/register/step3');
   }
+}
 
   void _goBack() {
     Navigator.of(context).pop();
@@ -185,13 +205,13 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
                     // ─── Student Number ───────────────────────────
                     CustomTextField(
                       label: 'Student Number',
-                      hint: 'Enter your student number (7-10 digits)',
+                      hint: 'Enter your student number (7-15 digits)',
                       prefixIcon: Icons.person_outline,
                       controller: _studentNumberController,
                       keyboardType: TextInputType.number,
-                      maxLength: 10,
+                      maxLength: 15,
                       showCounter: false, 
-                      helperText: 'Must be 7-10 digits and unique within the university',
+                      helperText: 'Must be 7-15 digits and unique within the university',
                       helperStyle: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textGrey,
@@ -217,7 +237,7 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: _selectedUniversity,
+                      initialValue: _selectedUniversity,
                       icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textGrey),
                       decoration: InputDecoration(
                         hintText: 'Select your university',
@@ -264,7 +284,7 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: _selectedMajor,
+                      initialValue: _selectedMajor,
                       icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textGrey),
                       decoration: InputDecoration(
                         hintText: 'Select your technical specialization',

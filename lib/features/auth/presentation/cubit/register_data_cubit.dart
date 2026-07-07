@@ -36,7 +36,7 @@ class RegisterDataCubit extends Cubit<RegisterDataState> {
   }
 
   void saveStep2Data({
-    required String studentNumber,
+    required num studentNumber,
     required int universityId,
     required String universityName,
     required String major,

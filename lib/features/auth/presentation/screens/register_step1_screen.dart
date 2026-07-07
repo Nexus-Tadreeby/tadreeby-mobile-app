@@ -167,16 +167,16 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     maxLength: 25,
     validator: (value) {
       if (value == null || value.isEmpty) {
-        return 'First name is required';
+        return 'required';
       }
       if (value.length < 2) {
-        return 'First name must be at least 2 characters';
+        return 'at least 2 characters';
       }
       if (value.length > 25) {
-        return 'First name cannot exceed 25 characters';
+        return 'cannot exceed 25 characters';
       }
       if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
-        return 'Name must contain only letters and spaces';
+        return 'only letters and spaces';
       }
       return null;
     },
@@ -193,16 +193,16 @@ Expanded(
     maxLength: 25,
     validator: (value) {
       if (value == null || value.isEmpty) {
-        return 'Last name is required';
+        return 'required';
       }
       if (value.length < 2) {
-        return 'Last name must be at least 2 characters';
+        return 'at least 2 characters';
       }
       if (value.length > 25) {
-        return 'Last name cannot exceed 25 characters';
+        return 'cannot exceed 25 characters';
       }
       if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
-        return 'Name must contain only letters and spaces';
+        return 'only letters and spaces';
       }
       return null;
     },

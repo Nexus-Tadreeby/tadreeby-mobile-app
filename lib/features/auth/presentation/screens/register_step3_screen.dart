@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -24,8 +28,9 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
   String? _selectedFilePath;
   String? _fileName;
   bool _isUploading = false;
-   static const int maxFileSizeInMB = 10;
-  static const int maxFileSizeInBytes = maxFileSizeInMB * 1024 * 1024; // 10,485,760 bytes
+  
+  static const int maxFileSizeInMB = 10;
+  static const int maxFileSizeInBytes = maxFileSizeInMB * 700 * 700; // 10 MB
 
   // ─── Lifecycle ──────────────────────────────────────────────────
   @override
@@ -79,7 +84,8 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
 
     final password = data['password']?.toString() ?? '';
     if (password.isEmpty) {
-    
+      return 'Password is required';
+    }
     if (password.length < 8) {
       return 'Password must be at least 8 characters';
     }
@@ -93,19 +99,26 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     }
     if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
       return 'Phone number must contain only numbers';
-    }}
+    }
 
-    final studentNumber = data['studentNumber']?.toString() ?? '';
-    if (studentNumber.isEmpty) {
+    final studentNumber = data['studentNumber'];
+    if (studentNumber == null) {
       return 'Student number is required';
     }
-    if (studentNumber.length < 7 || studentNumber.length > 15) {
+    
+    if (studentNumber is! num) {
+      return 'Invalid student number format';
+    }
+    
+    if (studentNumber < 0) {
+      return 'Student number cannot be negative';
+    }
+    
+    final studentNumberStr = studentNumber.toString();
+    if (studentNumberStr.length < 7 || studentNumberStr.length > 15) {
       return 'Student number must be between 7 and 15 digits';
     }
-    if (!RegExp(r'^[0-9]+$').hasMatch(studentNumber)) {
-      return 'Student number must contain only numbers';
-    }
-
+    
     final universityId = data['universityId'];
     if (universityId == null || universityId == 0) {
       return 'University selection is required';
@@ -125,108 +138,192 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
 
   // ─── File Pickers ───────────────────────────────────────────────
   Future<void> _pickFile() async {
-  try {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'png', 'pdf'],
-    );
-    
-    if (result != null) {
-      final file = result.files.single;
-      final path = file.path;
-      final name = file.name;
-      final sizeInBytes = file.size;
-      
-      if (sizeInBytes > maxFileSizeInBytes) {
-        final sizeInMB = (sizeInBytes / (1024 * 1024)).toStringAsFixed(1);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ File size ($sizeInMB MB) exceeds the maximum limit of $maxFileSizeInMB MB.',
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        return;
-      }
-      
-      setState(() {
-        _selectedFilePath = path;
-        _fileName = name;
-      });
-
-      // حفظ مسار الملف في Cubit
-      if (path != null) {
-        context.read<RegisterDataCubit>().saveStep3Data(
-          verificationDocumentPath: path,
-        );
-      }
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Failed to pick file. Please try again.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-}
-
- Future<void> _takePhoto() async {
-  try {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 80,
-    );
-
-    if (image != null) {
-      final fileSize = await image.length();
-      
-      if (fileSize > maxFileSizeInBytes) {
-        final sizeInMB = (fileSize / (1024 * 1024)).toStringAsFixed(1);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ Image size ($sizeInMB MB) exceeds the maximum limit of $maxFileSizeInMB MB.',
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        return;
-      }
-      
-      setState(() {
-        _selectedFilePath = image.path;
-        _fileName = image.name;
-      });
-
-      context.read<RegisterDataCubit>().saveStep3Data(
-        verificationDocumentPath: image.path,
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'png', 'jpeg', 'pdf'],
       );
+      
+      if (result != null) {
+        final file = result.files.single;
+        final path = file.path;
+        final name = file.name;
+        final sizeInBytes = file.size;
+        
+        print('📁 File size: ${(sizeInBytes / 700).toStringAsFixed(1)} KB');
+        
+        if (sizeInBytes > maxFileSizeInBytes) {
+          final sizeInMB = (sizeInBytes / (700 * 700)).toStringAsFixed(1);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '❌ File size ($sizeInMB MB) exceeds the maximum limit of $maxFileSizeInMB MB.',
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+        
+        if (path != null && (name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg'))) {
+          final compressedPath = await _compressImage(path);
+          if (compressedPath != null) {
+            final compressedFile = File(compressedPath);
+            final compressedSize = await compressedFile.length();
+            print('✅ Compressed: ${(sizeInBytes / 700).toStringAsFixed(1)} KB → ${(compressedSize / 700).toStringAsFixed(1)} KB');
+            
+            setState(() {
+              _selectedFilePath = compressedPath;
+              _fileName = 'compressed_$name';
+            });
+            context.read<RegisterDataCubit>().saveStep3Data(
+              verificationDocumentPath: compressedPath,
+            );
+            return;
+          }
+        }
+        
+        setState(() {
+          _selectedFilePath = path;
+          _fileName = name;
+        });
 
+        if (path != null) {
+          context.read<RegisterDataCubit>().saveStep3Data(
+            verificationDocumentPath: path,
+          );
+        }
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Photo captured successfully!'),
-          backgroundColor: Colors.green,
+          content: Text('Failed to pick file. Please try again.'),
+          backgroundColor: Colors.red,
         ),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Failed to capture photo: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
+
+  Future<String?> _compressImage(String path) async {
+    try {
+      final File file = File(path);
+      final bytes = await file.readAsBytes();
+      final image = await decodeImageFromList(bytes);
+      
+      int width = image.width;
+      int height = image.height;
+      const maxDimension = 800;
+      
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = (height * maxDimension / width).round();
+          width = maxDimension;
+        } else {
+          width = (width * maxDimension / height).round();
+          height = maxDimension;
+        }
+      }
+      
+      final compressedBytes = await _compressImageBytes(bytes, width, height);
+      
+      final String compressedPath = '${path}_compressed.jpg';
+      final File compressedFile = File(compressedPath);
+      await compressedFile.writeAsBytes(compressedBytes);
+      
+      return compressedPath;
+    } catch (e) {
+      print('❌ Compression failed: $e');
+      return path; 
+    }
+  }
+
+  Future<Uint8List> _compressImageBytes(Uint8List bytes, int width, int height) async {
+    final codec = await ui.instantiateImageCodec(bytes, targetWidth: width, targetHeight: height);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    
+    final byteData = await image.toByteData(
+      format: ui.ImageByteFormat.rawRgba,
+    );
+    return byteData!.buffer.asUint8List();
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 400,
+        maxHeight: 400,
+        imageQuality: 25,
+      );
+
+      if (image != null) {
+        final fileSize = await image.length();
+        print('📸 Image size: ${(fileSize / 700).toStringAsFixed(1)} KB');
+        
+        if (fileSize > maxFileSizeInBytes) {
+          final sizeInMB = (fileSize / (700 * 700)).toStringAsFixed(1);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '❌ Image size ($sizeInMB MB) exceeds the maximum limit of $maxFileSizeInMB MB.',
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+        
+        final compressedPath = await _compressImage(image.path);
+        if (compressedPath != null) {
+          setState(() {
+            _selectedFilePath = compressedPath;
+            _fileName = 'compressed_${image.name}';
+          });
+          context.read<RegisterDataCubit>().saveStep3Data(
+            verificationDocumentPath: compressedPath,
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo captured and compressed successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          return;
+        }
+        
+        setState(() {
+          _selectedFilePath = image.path;
+          _fileName = image.name;
+        });
+
+        context.read<RegisterDataCubit>().saveStep3Data(
+          verificationDocumentPath: image.path,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo captured successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to capture photo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   // ─── Submit Registration ────────────────────────────────────────
   void _submitRegistration() {
     final allData = context.read<RegisterDataCubit>().allData;
@@ -243,12 +340,14 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
       );
       return;
     }
+    
+    final num studentNumber = allData['studentNumber'] as num;
 
     final registerRequest = RegisterRequestModel(
       firstName: allData['firstName'] ?? '',
       lastName: allData['lastName'] ?? '',
       personalID: int.tryParse(allData['nationalId']?.toString() ?? '0') ?? 0,
-      studentNumber: int.tryParse(allData['studentNumber']?.toString() ?? '0') ?? 0,
+      studentNumber: studentNumber,  
       phone: allData['phone'] ?? '',
       email: allData['email'] ?? '',
       password: allData['password'] ?? '',
@@ -450,7 +549,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
                                         ),
                                         const SizedBox(height: 4),
                                         const Text(
-                                          'JPG, PNG or PDF (Max. 5MB)',
+                                          'JPG, PNG or PDF (Max. 10MB)',
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: AppColors.textGrey,
