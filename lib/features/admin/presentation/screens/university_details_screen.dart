@@ -1,0 +1,751 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tadreeby/core/theme/app_colors.dart';
+import 'package:tadreeby/features/admin/data/models/university_model.dart';
+import '../cubits/university_cubit.dart';
+import '../cubits/university_state.dart';
+
+class UniversityDetailsScreen extends StatefulWidget {
+  final int universityId;
+
+  const UniversityDetailsScreen({
+    super.key,
+    required this.universityId,
+  });
+
+  @override
+  State<UniversityDetailsScreen> createState() => _UniversityDetailsScreenState();
+}
+
+class _UniversityDetailsScreenState extends State<UniversityDetailsScreen> {
+  late UniversityModel _university;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUniversityDetails();
+  }
+
+  void _loadUniversityDetails() {
+    context.read<UniversityCubit>().getUniversityById(widget.universityId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          onPressed: () => context.pop(),
+        ),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'University Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark,
+              ),
+            ),
+            SizedBox(height: 2),
+            Text(
+              'View university information',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+                color: AppColors.textGrey,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: BlocConsumer<UniversityCubit, UniversityState>(
+        listener: (context, state) {
+          if (state is UniversityLoaded) {
+            setState(() {
+              _university = state.university;
+              _isLoading = false;
+            });
+          } else if (state is UniversityError) {
+            setState(() {
+              _isLoading = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (_isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is UniversityLoaded) {
+            return _buildContent(context, state.university);
+          }
+
+          if (state is UniversityError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadUniversityDetails,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () => context.pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, UniversityModel university) {
+    final isActive = university.isActive;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ─── Header Card ──────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderGrey.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ─── Logo ──────────────────────────────────────
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.borderGrey.withOpacity(0.6)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: university.logo != null && university.logo!.isNotEmpty
+                      ? Image.network(
+                          university.logo!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.account_balance_outlined,
+                            color: AppColors.primaryBlue,
+                            size: 28,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.account_balance_outlined,
+                          color: AppColors.primaryBlue,
+                          size: 28,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        university.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                       Container(
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+  decoration: BoxDecoration(
+    color: AppColors.primaryBlue.withOpacity(0.1),
+    borderRadius: BorderRadius.circular(6),
+    border: Border.all(
+      color: AppColors.primaryBlue, // ✅ نفس لون الخط
+      width: 1.2,
+    ),
+  ),
+  child: Text(
+    university.shortCode,
+    style: const TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: AppColors.primaryBlue,
+    ),
+  ),
+),
+                          if (university.location != null &&
+                              university.location!.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 13,
+                              color: AppColors.primaryBlue,
+                            ),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                university.location!,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primaryBlue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // ─── Status Badge ──────────────────────
+                Padding(
+                  padding: const EdgeInsets.only(top: 6.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? Colors.green.withOpacity(0.12)
+                          : Colors.orange.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isActive
+                            ? Colors.green.withOpacity(0.4)
+                            : Colors.orange.withOpacity(0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isActive ? Colors.green : Colors.orange,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          isActive ? 'Active' : 'Inactive',
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w600,
+                            color: isActive ? Colors.green.shade700 : Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ─── General Information ─────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderGrey.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.info, color: AppColors.primaryBlue, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'General Information',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildInfoRow(
+                  label: 'University Name',
+                  value: university.name,
+                ),
+                _buildInfoRow(
+                  label: 'Short Code',
+                  value: university.shortCode,
+                ),
+                _buildInfoRow(
+                  label: 'Email',
+                  value: university.email ?? 'Not provided',
+                ),
+                _buildInfoRow(
+                  label: 'Phone',
+                  value: university.phone ?? 'Not provided',
+                ),
+                _buildInfoRow(
+                  label: 'Location',
+                  value: university.location ?? 'Not provided',
+                ),
+                _buildInfoRow(
+                  label: 'Description',
+                  value: university.description ?? 'No description provided',
+                  isMultiLine: true,
+                  isLast: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ─── Statistics ──────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderGrey.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Statistics',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: () {
+                        // TODO: Navigate to full statistics screen
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.primaryBlue.withOpacity(0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      ),
+                      child: const Text(
+                        'View More',
+                        style: TextStyle(fontSize: 12, color: AppColors.primaryBlue),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (university.count != null)
+                  Row(
+                    children: [
+                      _buildStatCard(
+                        label: 'Students',
+                        value: university.count!.students,
+                        color: Colors.blue,
+                      ),
+                      _buildStatCard(
+                        label: 'Admins',
+                        value: university.count!.users,
+                        color: Colors.purple,
+                      ),
+                      _buildStatCard(
+                        label: 'Supervisors',
+                        value: university.count!.supervisors,
+                        color: Colors.orange,
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+// ─── System Information ──────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderGrey.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'System Information',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: () {
+                        // TODO: Navigate to add admin screen
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.primaryBlue.withOpacity(0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      ),
+                      child: const Text(
+                        'Add Admin',
+                        style: TextStyle(fontSize: 12, color: AppColors.primaryBlue),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildSystemInfoRow(
+                        icon: Icons.edit_outlined,
+                        label: 'Created By',
+                        value: _formatDate(university.createdAt),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildPersonInfoRow(
+                        name: 'Super Admin',
+                        role: 'Created By',
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildSystemInfoRow(
+                        icon: Icons.autorenew_outlined,
+                        label: 'Last Updated',
+                        value: _formatDate(university.updatedAt),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildPersonInfoRow(
+                        name: 'Not assigned',
+                        role: 'University Admin',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+
+
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+// ─── Info Row ──────────────────────────────────────────────────
+  Widget _buildInfoRow({
+    required String label,
+    required String value,
+    bool isMultiLine = false,
+    bool isLast = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 110, 
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textGrey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (!isLast)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+             
+            ),
+        ],
+      ),
+    );
+  }
+  // ─── Stat Card ──────────────────────────────────────────────────
+  Widget _buildStatCard({
+    required String label,
+    required int value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            _formatNumber(value),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textGrey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── System Info Row ────────────────────────────────────────────
+  Widget _buildSystemInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: Colors.orange, size: 16),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textGrey,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Person Info Row ────────────────────────────────────────────
+  Widget _buildPersonInfoRow({
+    required String name,
+    required String role,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.infoBackground,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.person, size: 18, color: AppColors.primaryBlue),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                Text(
+                  role,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textGrey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Helper Methods ─────────────────────────────────────────────
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _formatNumber(int value) {
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return value.toString();
+  }
+}
