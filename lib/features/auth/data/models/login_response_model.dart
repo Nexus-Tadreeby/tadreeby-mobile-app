@@ -34,6 +34,7 @@ class UserModel {
   final int? companyId;
   final bool isActive;
   final String createdAt;
+  final String? recoveryEmail;
   final StudentProfileModel? studentProfile;
 
   UserModel({
@@ -49,6 +50,7 @@ class UserModel {
     this.companyId,
     required this.isActive,
     required this.createdAt,
+    this.recoveryEmail,
     this.studentProfile,
   });
 
@@ -66,6 +68,7 @@ class UserModel {
       companyId: json['companyId'],
       isActive: json['isActive'] ?? false,
       createdAt: json['createdAt'] ?? '',
+      recoveryEmail: json['recoveryEmail'],
       studentProfile: json['studentProfile'] != null 
           ? StudentProfileModel.fromJson(json['studentProfile']) 
           : null,
@@ -76,7 +79,7 @@ class UserModel {
 class StudentProfileModel {
   final int userId;
   final int universityId;
-  final int studentNumber;
+  final num studentNumber;
   final String major;
   final int? academicYear;
   final double? gpa;

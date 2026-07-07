@@ -425,7 +425,10 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'STUDENT':
         context.go('/student/dashboard');
         break;
-      case 'ADMIN':
+      case 'SUPER_ADMIN':  
+        context.go('/admin/dashboard');
+        break;
+      case 'UNIVERSITY_ADMIN':  
         context.go('/admin/dashboard');
         break;
       case 'COMPANY':
@@ -478,7 +481,7 @@ class _LoginScreenState extends State<LoginScreen> {
 // TADREEBY LOGO
 // ============================================================
 class _TadreebyLogo extends StatelessWidget {
-  const _TadreebyLogo({super.key});
+  const _TadreebyLogo();
 
   @override
   Widget build(BuildContext context) {
