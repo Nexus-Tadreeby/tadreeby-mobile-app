@@ -540,7 +540,7 @@ class _FeatureCardState extends State<_FeatureCard> with SingleTickerProviderSta
           height: 60,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        errorBuilder: (_, __, ___) => const Icon(
+        errorBuilder: (_, _, _) => const Icon(
           Icons.error_outline,
           color: Colors.red,
           size: 40,
@@ -552,7 +552,7 @@ class _FeatureCardState extends State<_FeatureCard> with SingleTickerProviderSta
         width: 60,
         height: 60,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const Icon(
+        errorBuilder: (_, _, _) => const Icon(
           Icons.image_outlined,
           color: Color(0xFF2563EB),
           size: 49,
@@ -609,7 +609,7 @@ class _FeatureCardState extends State<_FeatureCard> with SingleTickerProviderSta
 }
 
 // ============================================================
-// FEATURE ILLUSTRATION
+// FEATURE ILLUSTRATION (تم تعديله ليكون متجاوب مع كل مقاسات الشاشات)
 // ============================================================
 
 class _FeatureIllustration extends StatelessWidget {
@@ -623,50 +623,72 @@ class _FeatureIllustration extends StatelessWidget {
     this.phoneImagePath,
   });
 
+  // // نسب ثابتة (Alignment) بدل أرقام بيكسل ثابتة
+  // // بهيك الشكل بيضل زي ما هو بالظبط بغض النظر عن حجم الشاشة
+  // static const Map<_FeaturePosition, Alignment> _alignments = {
+  //   _FeaturePosition.topLeft: Alignment(-0.72, -0.55),
+  //   _FeaturePosition.topRight: Alignment(0.72, -0.55),
+  //   _FeaturePosition.middleLeft: Alignment(-0.78, 0.05),
+  //   _FeaturePosition.middleRight: Alignment(0.78, 0.05),
+  //   _FeaturePosition.bottomLeft: Alignment(0.0, -0.85),
+  //   _FeaturePosition.bottomCenter: Alignment(0.0, 0.68),
+  // };
+
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
-        final cx = w / 2;
-        final cy = h / 2;
+Widget build(BuildContext context) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      // نفس نسبة العرض للارتفاع اللي بالتصميم الأصلي
+      // حتى ما تكبر/تنكمش الكروت حسب طول شاشة كل جهاز
+      const double designAspectRatio = 0.8; // عرض / ارتفاع
 
-        final imageWidth = w * 1;
-        final imageHeight = h * 1;
-        final double horizontalMargin = imageWidth * 0.35;
-        final double verticalMargin = imageHeight * 0.38;
+      double w = constraints.maxWidth;
+      double h = w / designAspectRatio;
 
-        Map<_FeaturePosition, Offset> positions = {
-          _FeaturePosition.topLeft: Offset(
-            cx - horizontalMargin - -5,
-            cy - verticalMargin - -99,
-          ),
-          _FeaturePosition.topRight: Offset(
-            cx + horizontalMargin - 90,
-            cy - verticalMargin - -99
-          ),
-          _FeaturePosition.middleLeft: Offset(
-            cx - horizontalMargin - -10,
-            cy - imageHeight * -0.05
-          ),
-          _FeaturePosition.middleRight: Offset(
-            cx + horizontalMargin - 80,
-            cy - imageHeight * -0.05
-          ),
-          _FeaturePosition.bottomLeft: Offset(
-            cx - horizontalMargin - -104,
-            cy + verticalMargin - 450
-          ),
-          _FeaturePosition.bottomCenter: Offset(
-            cx - imageWidth * 0.09,
-            cy + verticalMargin + -90
-          ),
-        };
-        
-        return SizedBox(
-          width: double.infinity,
-          height: double.infinity,
+      if (h > constraints.maxHeight) {
+        h = constraints.maxHeight;
+        w = h * designAspectRatio;
+      }
+
+      final cx = w / 2;
+      final cy = h / 2;
+
+      final imageWidth = w * 1;
+      final imageHeight = h * 1;
+      final double horizontalMargin = imageWidth * 0.35;
+      final double verticalMargin = imageHeight * 0.38;
+
+      Map<_FeaturePosition, Offset> positions = {
+        _FeaturePosition.topLeft: Offset(
+          cx - horizontalMargin - -5,
+          cy - verticalMargin - -99,
+        ),
+        _FeaturePosition.topRight: Offset(
+          cx + horizontalMargin - 90,
+          cy - verticalMargin - -99
+        ),
+        _FeaturePosition.middleLeft: Offset(
+          cx - horizontalMargin - -10,
+          cy - imageHeight * -0.05
+        ),
+        _FeaturePosition.middleRight: Offset(
+          cx + horizontalMargin - 80,
+          cy - imageHeight * -0.05
+        ),
+        _FeaturePosition.bottomLeft: Offset(
+          cx - horizontalMargin - -100,
+          cy + verticalMargin - 390
+        ),
+        _FeaturePosition.bottomCenter: Offset(
+          cx - imageWidth * 0.09,
+          cy + verticalMargin + -90
+        ),
+      };
+
+      return Center(
+        child: SizedBox(
+          width: w,
+          height: h,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -685,7 +707,6 @@ class _FeatureIllustration extends StatelessWidget {
                           color: Colors.grey[200],
                           borderRadius: BorderRadius.circular(20),
                         ),
-                       
                       ),
               ),
 
@@ -700,7 +721,6 @@ class _FeatureIllustration extends StatelessWidget {
                 ),
               ),
 
-
               for (final feature in features)
                 if (positions.containsKey(feature.position))
                   Positioned(
@@ -711,14 +731,13 @@ class _FeatureIllustration extends StatelessWidget {
                       label: feature.label,
                     ),
                   ),
-                  
-            
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 }
 
 // ============================================================
