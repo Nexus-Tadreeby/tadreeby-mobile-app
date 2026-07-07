@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/screens/forgot_password/check_email_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +21,7 @@ class _CheckEmailScreenState extends State<CheckEmailScreen> {
   bool _isCodeVerified = false;
 
   // ⏱️ Timer for resend
-  int _resendSeconds = 60;
+  int _resendSeconds = 120;
   Timer? _timer;
   bool _canResend = false;
 
@@ -43,9 +42,13 @@ class _CheckEmailScreenState extends State<CheckEmailScreen> {
       _email = extra;
     }
   }
-
+String _formatTime(int seconds) {
+  final minutes = seconds ~/ 60;
+  final remainingSeconds = seconds % 60;
+  return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+}
   void _startTimer() {
-    _resendSeconds = 60;
+    _resendSeconds = 120;
     _canResend = false;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -396,18 +399,18 @@ SizedBox(
       ),
       elevation: 0,
     ),
-    child: Text(
-      _canResend
-          ? 'Resend Code'
-          : 'Resend Code (${_resendSeconds.toString().padLeft(2, '0')}:00)',
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        color: _canResend
-            ? AppColors.primaryBlue 
-            : Colors.grey.shade400,    
-      ),
-    ),
+ child: Text(
+  _canResend
+      ? 'Resend Code'
+      : 'Resend Code (${_formatTime(_resendSeconds)})',
+  style: TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: _canResend
+        ? AppColors.primaryBlue 
+        : Colors.grey.shade400,    
+  ),
+),
   ),
 ),
                     const SizedBox(height: 16),
