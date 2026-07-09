@@ -8,6 +8,10 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Tadreeby</string>
+	<key>NSCameraUsageDescription</key>
+    <string>We need camera access to take a photo of your university card for verification.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need photo library access to upload your university card.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
